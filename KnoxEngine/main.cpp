@@ -59,19 +59,7 @@ int main()
 	glViewport(0, 0, 800, 600);
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
-	float vertices[] = {
-		-0.5f, -0.5f, 0.0f,
-		 0.0f,  0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f
-	};
-
-	// Vertex Buffer Object
-	unsigned int vertexBufferObj;
-	glGenBuffers(1, &vertexBufferObj);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObj);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	// Vertex shader
+	// Vertex Shader
 	unsigned int vertexShader;
 	vertexShader = glCreateShader(GL_VERTEX_SHADER);
 
@@ -79,19 +67,18 @@ int main()
 	glCompileShader(vertexShader);
 
 	int success;
+	char infoLog[512];
 	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
 	if (!success)
 	{
-		char infoLog[512];
 		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		printf("ERROR: Vertex shader compilation failed!\n");
+		printf("ERROR: Failed to compile VertexShader!\n");
 		printf("INFO_LOG: %s\n", infoLog);
 	}
 	else
 	{
 		printf("Vertex shader compiled successfully\n");
 	}
-
 
 	// Fragment Shader
 	unsigned int fragmentShader;
@@ -103,9 +90,8 @@ int main()
 	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
 	if (!success)
 	{
-		char infoLog[512];
 		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-		printf("ERROR: Fragment shader compilation failed!\n");
+		printf("ERROR: Failed to compile FragmentShader!\n");
 		printf("INFO_LOG: %s\n", infoLog);
 	}
 	else
@@ -113,6 +99,52 @@ int main()
 		printf("Fragment shader compiled successfully\n");
 	}
 
+	// Shader Program
+	unsigned int shaderProgram;
+	shaderProgram = glCreateProgram();
+	
+	glAttachShader(shaderProgram, vertexShader);
+	glAttachShader(shaderProgram, fragmentShader);
+	glLinkProgram(shaderProgram);
+
+	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+	if (!success)
+	{
+		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+		printf("ERROR: Failed to link ShaderProgram!\n");
+		printf("INFO_LOG: %s\n", infoLog);
+	}
+	else
+	{
+		glDeleteShader(vertexShader);
+		glDeleteShader(fragmentShader);
+		printf("ShaderProgram linked successfully\n");
+	}
+	
+	// Vertex (and buffers) setup and configuration
+	float vertices[] = {
+		-0.5f, -0.5f, 0.0f,
+		 0.0f,  0.5f, 0.0f,
+		 0.5f, -0.5f, 0.0f
+	};
+
+	unsigned int vertexArrayObj, vertexBufferObj;
+	glGenVertexArrays(1, &vertexArrayObj);
+	glGenBuffers(1, &vertexBufferObj);
+
+	glBindVertexArray(vertexArrayObj);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObj);
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)0);
+	glEnableVertexAttribArray(0);
+
+	// Unbinding vertexBufferObj, the call to glVertexAttribPointer register the vertexBufferObj as 
+	// the vertex attribute's bound vertex buffer object
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
+	// We also unbind the vertexArrayObject so other calls won't accidentally modify it
+	glBindVertexArray(0);
 
 	// Render Loop
 	while (!glfwWindowShouldClose(window))
@@ -123,9 +155,17 @@ int main()
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		glUseProgram(shaderProgram);
+		glBindVertexArray(vertexArrayObj);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
 		glfwPollEvents();
 		glfwSwapBuffers(window);
 	}
+
+	glDeleteVertexArrays(1, &vertexArrayObj);
+	glDeleteBuffers(1, &vertexBufferObj);
+	glDeleteProgram(shaderProgram);
 
 	glfwTerminate();
 	return 0;
