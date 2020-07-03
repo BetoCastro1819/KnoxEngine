@@ -101,9 +101,9 @@ int main()
 	//
 	// LOAD TEXTURE
 	//
-	unsigned int texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
+	unsigned int texture1, texture2;
+	glGenTextures(1, &texture1);
+	glBindTexture(GL_TEXTURE_2D, texture1);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); 		// Horizontal repeat
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); 		// Vertical repeat
@@ -136,12 +136,52 @@ int main()
 	// NOTE Texture is already loaded to OpenGL, so we can free this memory
 	stbi_image_free(textureData);
 
-	
+
+	glGenTextures(1, &texture2);
+	glBindTexture(GL_TEXTURE_2D, texture2);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); 		// Horizontal repeat
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); 		// Vertical repeat
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	// Linear mipmap interpolation at texture downscale
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// Linear mipmap interpolation at texture upscale
+
+	textureFilePath = "resources/textures/brick-wall.jpg";
+	textureData = stbi_load(textureFilePath, &width, &height, &nrChannels, 0);
+
+	if (textureData)
+	{
+		glTexImage2D(
+			GL_TEXTURE_2D, 		// texture target, we bound it to GL_TEXTURE_2D, GL_TEXTURE_1D and GL_TEXTURE_3D will not be affected
+			0,					// mipmap level, 0 is the base level, we don't want to create the mipmaps manually
+			GL_RGB,				// type of format to store texture, our image only has RGB values, so we set this to GL_RGB
+			width, height,		// width and height of the resulting texture
+			0, 					// always set this to 0 (some legacy stuff...)
+			GL_RGB,				// format of the source image, we stored loaded it with RGB values, so GL_RGB
+			GL_UNSIGNED_BYTE,	// datatype of the source image, we stored them as char's (bytes), se we pass GL_UNSIGNED_BYTE
+			textureData			// the actual image data
+		);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		printf("ERROR: Failed to load texture from %s\n", textureFilePath);
+	}
+
+	// NOTE Texture is already loaded to OpenGL, so we can free this memory
+	stbi_image_free(textureData);
+
+
+
 	////////////////////////////////////////
 	//
 	// RENDER LOOP
 	//
 	Shader shader("resources/shaders//VertexShader.txt", "resources/shaders/FragmentShader.txt");
+
+	// NOTE We have to activate the shader before setting uniforms
+	glUseProgram(shader.Id);
+	shader.setInt("texture1", 0);
+	shader.setInt("texture2", 1);
 
 	// Uncomment to draw wireframes
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -168,7 +208,13 @@ int main()
 		shader.setInt("iFrame", frameCount);
 		glUseProgram(shader.Id);
 
-		glBindTexture(GL_TEXTURE_2D, texture);
+		// NOTE GL_TEXTURE0 is activated by default, 
+		// so if there is only ONE texture, there is no need to actiavte it manually
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture1);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, texture2);
+
 		glBindVertexArray(VAO[0]);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
