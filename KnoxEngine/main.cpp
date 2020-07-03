@@ -2,6 +2,8 @@
 #include <GLFW/glfw3.h>
 
 #include "Shader.h"
+#include "resources/utils/stb_image.h"
+
 #include <iostream>
 
 void framebufferSizeCallback(GLFWwindow *window, int width, int height);
@@ -9,6 +11,10 @@ void processInput(GLFWwindow *window);
 
 int main()
 {
+	////////////////////////////////////
+	//
+	// GLFW and GLAD setup
+	//
 	glfwInit();
 	
 	// Setup to target the OpenGL version 3.3 core-profile
@@ -34,41 +40,51 @@ int main()
 	glViewport(0, 0, 800, 600);
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
+
+	////////////////////////////////////
+	//
 	// Vertex (and buffers) setup and configuration
+	//
 	float triangle_1[] = {
-		// positions		 // colors
-		-0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,
-		 0.0f,  0.5f, 0.0f,  0.0f, 1.0f, 0.0f,
-		 0.5f, -0.5f, 0.0f,  0.0f, 0.0f, 1.0f,
+		// positions		 	// colors				// texture coords
+		 0.5f,  0.5f, 0.0f,		1.0f, 0.0f, 0.0f,		1.0f, 1.0f,  // top right
+		 0.5f, -0.5f, 0.0f,		0.0f, 1.0f, 0.0f,		1.0f, 0.0f,  // bottom right
+		-0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,		0.0f, 0.0f,  // bottom left
+		-0.5f,  0.5f, 0.0f,		1.0f, 1.0f, 1.0f,		0.0f, 1.0f   // top left
 	};
 
-	//unsigned int indices[] = { 
-	//	0, 1, 3, // first triangle
-	//	1, 2, 3  // second triangle
-	//};	
+    unsigned int indices[] = {  
+        0, 1, 3, // first triangle
+        1, 2, 3  // second triangle
+    };
 
-	unsigned int VAO[1], VBO[1]; // EBO;
+	unsigned int VAO[1], VBO[1], EBO;
 	glGenVertexArrays(1, VAO);
 	glGenBuffers(1, VBO);
-	//glGenBuffers(1, &EBO);
+	glGenBuffers(1, &EBO);
 
 	glBindVertexArray(VAO[0]);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(triangle_1), triangle_1, GL_STATIC_DRAW);
 
-	// 3 floats for position + 3 floats for colors
-	GLsizei vertexStride = sizeof(float) * 6; 
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+	// 3 floats for position + 3 floats for colors + 2 floats for texture coords
+	GLsizei vertexStride = sizeof(float) * 8; 
 	
-	// Vertex attribute al (location = 0) => vertex position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertexStride, (void*)0);
+	// NOTE Vertex attribute al (location = 0) => vertex position
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertexStride, (void *)0);
 	glEnableVertexAttribArray(0);
 
-	// Vertex attribute al (location = 1) => vertex color
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertexStride, (void*)(sizeof(float) * 3));
+	// NOTE Vertex attribute al (location = 1) => vertex color
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertexStride, (void *)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	// NOTE Vertex attribute al (location = 2) => texture coords
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, vertexStride, (void *)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
 	
 	// Unbinding VBO, the call to glVertexAttribPointer register the VBO as 
 	// the vertex attribute's bound vertex buffer object
@@ -81,10 +97,51 @@ int main()
 	glBindVertexArray(0);
 
 
-	////////////////////////////////////////
-	/* RENDER LOOP */
+	////////////////////////////////////
+	//
+	// LOAD TEXTURE
+	//
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
 
-	Shader shader("Shaders/VertexShader.txt", "Shaders/FragmentShader.txt");
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); 		// Horizontal repeat
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); 		// Vertical repeat
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	// Linear mipmap interpolation at texture downscale
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// Linear mipmap interpolation at texture upscale
+
+	int width, height, nrChannels;
+	const char *textureFilePath = "resources/textures/wood-container.jpg";
+	unsigned char *textureData = stbi_load(textureFilePath, &width, &height, &nrChannels, 0);
+
+	if (textureData)
+	{
+		glTexImage2D(
+			GL_TEXTURE_2D, 		// texture target, we bound it to GL_TEXTURE_2D, GL_TEXTURE_1D and GL_TEXTURE_3D will not be affected
+			0,					// mipmap level, 0 is the base level, we don't want to create the mipmaps manually
+			GL_RGB,				// type of format to store texture, our image only has RGB values, so we set this to GL_RGB
+			width, height,		// width and height of the resulting texture
+			0, 					// always set this to 0 (some legacy stuff...)
+			GL_RGB,				// format of the source image, we stored loaded it with RGB values, so GL_RGB
+			GL_UNSIGNED_BYTE,	// datatype of the source image, we stored them as char's (bytes), se we pass GL_UNSIGNED_BYTE
+			textureData			// the actual image data
+		);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		printf("ERROR: Failed to load texture from %s\n", textureFilePath);
+	}
+
+	// NOTE Texture is already loaded to OpenGL, so we can free this memory
+	stbi_image_free(textureData);
+
+	
+	////////////////////////////////////////
+	//
+	// RENDER LOOP
+	//
+	Shader shader("resources/shaders//VertexShader.txt", "resources/shaders/FragmentShader.txt");
 
 	// Uncomment to draw wireframes
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -111,8 +168,9 @@ int main()
 		shader.setInt("iFrame", frameCount);
 		glUseProgram(shader.Id);
 
+		glBindTexture(GL_TEXTURE_2D, texture);
 		glBindVertexArray(VAO[0]);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

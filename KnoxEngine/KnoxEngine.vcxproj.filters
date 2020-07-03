@@ -13,8 +13,11 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Source Files\Shaders">
-      <UniqueIdentifier>{31604c60-9745-4522-b4f6-51764ee00c2c}</UniqueIdentifier>
+    <Filter Include="Resource Files\shaders">
+      <UniqueIdentifier>{fc7f374e-7df3-44c2-8d7f-069cd6fb12d0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\utils">
+      <UniqueIdentifier>{c649479b-50cf-4488-aeed-d47a40f59857}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -27,18 +30,24 @@
     <ClCompile Include="Shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="resources\utils\stb_image.cpp">
+      <Filter>Resource Files\utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="resources\utils\stb_image.h">
+      <Filter>Resource Files\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Shaders\FragmentShader.txt">
-      <Filter>Source Files\Shaders</Filter>
+    <Text Include="resources\shaders\FragmentShader.txt">
+      <Filter>Resource Files\shaders</Filter>
     </Text>
-    <Text Include="Shaders\VertexShader.txt">
-      <Filter>Source Files\Shaders</Filter>
+    <Text Include="resources\shaders\VertexShader.txt">
+      <Filter>Resource Files\shaders</Filter>
     </Text>
   </ItemGroup>
 </Project>
