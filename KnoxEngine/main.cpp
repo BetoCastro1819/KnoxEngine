@@ -47,10 +47,10 @@ int main()
 	//
 	float triangle_1[] = {
 		// positions		 	// colors				// texture coords
-		 0.5f,  0.5f, 0.0f,		1.0f, 0.0f, 0.0f,		1.0f, 1.0f,  // top right
-		 0.5f, -0.5f, 0.0f,		0.0f, 1.0f, 0.0f,		1.0f, 0.0f,  // bottom right
-		-0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,		0.0f, 0.0f,  // bottom left
-		-0.5f,  0.5f, 0.0f,		1.0f, 1.0f, 1.0f,		0.0f, 1.0f   // top left
+		 0.5f,  0.5f, 0.0f,		1.0f, 0.0f, 0.0f,		1.0f, 0.0f,  // top right
+		 0.5f, -0.5f, 0.0f,		0.0f, 1.0f, 0.0f,		1.0f, 1.0f,  // bottom right
+		-0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,		0.0f, 1.0f,  // bottom left
+		-0.5f,  0.5f, 0.0f,		1.0f, 1.0f, 1.0f,		0.0f, 0.0f   // top left
 	};
 
     unsigned int indices[] = {  
@@ -145,7 +145,7 @@ int main()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	// Linear mipmap interpolation at texture downscale
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// Linear mipmap interpolation at texture upscale
 
-	textureFilePath = "resources/textures/brick-wall.jpg";
+	textureFilePath = "resources/textures/awesomeface.png";
 	textureData = stbi_load(textureFilePath, &width, &height, &nrChannels, 0);
 
 	if (textureData)
@@ -156,7 +156,7 @@ int main()
 			GL_RGB,				// type of format to store texture, our image only has RGB values, so we set this to GL_RGB
 			width, height,		// width and height of the resulting texture
 			0, 					// always set this to 0 (some legacy stuff...)
-			GL_RGB,				// format of the source image, we stored loaded it with RGB values, so GL_RGB
+			GL_RGBA,			// format of the source image, we stored loaded it with RGB values, so GL_RGBA because .png files have an Alpha value
 			GL_UNSIGNED_BYTE,	// datatype of the source image, we stored them as char's (bytes), se we pass GL_UNSIGNED_BYTE
 			textureData			// the actual image data
 		);
@@ -176,7 +176,7 @@ int main()
 	//
 	// RENDER LOOP
 	//
-	Shader shader("resources/shaders//VertexShader.txt", "resources/shaders/FragmentShader.txt");
+	Shader shader("resources/shaders/VertexShader.txt", "resources/shaders/FragmentShader.txt");
 
 	// NOTE We have to activate the shader before setting uniforms
 	glUseProgram(shader.Id);
@@ -205,7 +205,8 @@ int main()
 		//int colorLocation = glGetUniformLocation(shaderProgram, "color");
 		//glUniform4f(colorLocation, 0.0f, colorValue, 0.0f, 1.0f);
 		
-		shader.setInt("iFrame", frameCount);
+		shader.setInt("frameCount", frameCount);
+		shader.setFloat("mixValue", 0.5f);
 		glUseProgram(shader.Id);
 
 		// NOTE GL_TEXTURE0 is activated by default, 
